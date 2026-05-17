@@ -6,6 +6,20 @@ MinIO locally), metadata in Postgres.
 
 This is a personal project which heavily uses Claude Code (Opus 4.7) to explore AI-assisted development.
 
+## Demo
+
+Login:
+
+![hippo](https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExb2t3bmhraXZnZW94aWtyNTkxYXB4YnFtNXdlNTBheHEwbnV4ZHJreCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/pBjm4TUyuuRKs6UOTX/giphy.gif)
+
+File upload/download:
+
+![hippo](https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExeTh6emN1YnFxcTRwdjRhemg0anlmMDFnNHlpbWVzdWk0aG4zbDRraCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/Kqq6vhD4YjG9QutMtF/giphy.gif)
+
+Folder creation:
+
+![hippo](https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExM3NsYTduOW5teGhzMGNiZnVqb3Bud3Z1YjAzdmdweWFvdWV3MHMxaiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/hndB5RikfF6JpDLZYx/giphy.gif)
+
 ## Repo layout
 
 ```
