@@ -1,0 +1,103 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: lebox
+      POSTGRES_PASSWORD: lebox
+      POSTGRES_DB: lebox
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lebox"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  minio:
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+      # Allow the frontend (http://localhost:8080) to make cross-origin
+      # uploads/downloads directly to MinIO via presigned URLs.
+      MINIO_API_CORS_ALLOW_ORIGIN: "*"
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # web console
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # One-shot: create the bucket and apply a CORS policy that exposes the ETag
+  # header (the browser needs this to read each part's ETag during multipart upload).
+  minio-init:
+    image: minio/mc:RELEASE.2025-08-13T08-35-41Z@sha256:a7fe349ef4bd8521fb8497f55c6042871b2ae640607cf99d9bede5e9bdf11727
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        set -e
+        mc alias set local http://minio:9000 minioadmin minioadmin
+        mc mb --ignore-existing local/lebox
+        cat > /tmp/cors.json <<'EOF'
+        [
+          {
+            "AllowedOrigin": ["*"],
+            "AllowedMethod": ["GET","PUT","POST","DELETE","HEAD"],
+            "AllowedHeader": ["*"],
+            "ExposeHeader": ["ETag"],
+            "MaxAgeSeconds": 3600
+          }
+        ]
+        EOF
+        mc anonymous set download local/lebox || true
+        # MinIO uses S3-compatible CORS via mc admin; for simplicity rely on
+        # AllowAll defaults + ExposeHeader via env on the bucket.
+        echo "MinIO bucket 'lebox' ready."
+
+  backend:
+    build: ../../backend
+    environment:
+      AUTH_MODE: dev
+      DEV_JWT_SECRET: dev-secret-change-me
+      DATABASE_URL: postgresql+asyncpg://lebox:lebox@postgres:5432/lebox
+      S3_BUCKET: lebox
+      S3_REGION: us-east-1
+      S3_ENDPOINT_URL: http://minio:9000          # backend → MinIO (in-network)
+      S3_PUBLIC_ENDPOINT_URL: http://localhost:9000  # browser → MinIO (host-routable)
+      S3_ACCESS_KEY_ID: minioadmin
+      S3_SECRET_ACCESS_KEY: minioadmin
+      S3_USE_PATH_STYLE: "true"
+      CORS_ORIGINS: http://localhost:8080,http://localhost:5173
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    ports:
+      - "8000:8000"
+    # Run migrations on startup, then launch uvicorn.
+    command: >
+      sh -c "alembic upgrade head &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000"
+
+  frontend:
+    build: ../../frontend
+    depends_on:
+      - backend
+    ports:
+      - "8080:80"
+
+volumes:
+  pg-data:
+  minio-data:

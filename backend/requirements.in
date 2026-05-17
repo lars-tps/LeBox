@@ -1,0 +1,15 @@
+# Top-level dependencies. Edit this file, then regenerate requirements.txt:
+#
+#   python -m piptools compile --generate-hashes --output-file=requirements.txt requirements.in
+#
+# requirements.txt is the lockfile — pip-installed with --require-hashes in the Dockerfile.
+fastapi==0.115.0
+uvicorn[standard]==0.32.0
+sqlalchemy==2.0.36
+asyncpg==0.30.0
+alembic==1.13.3
+pydantic==2.9.2
+pydantic-settings==2.6.1
+PyJWT[crypto]==2.9.0
+boto3==1.35.50
+python-multipart==0.0.12
